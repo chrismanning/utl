@@ -6,7 +6,7 @@ void main(string[] args)
 {
     try {
         uint i;
-        Outer: foreach(string name; dirEntries(".",SpanMode.shallow)) {
+        Outer: foreach(string name; dirEntries(args?args[1]:".",SpanMode.shallow)) {
             Inner: foreach(string ext; Extensions) {
                 if(name.endsWith(ext))
                     break;
@@ -15,10 +15,11 @@ void main(string[] args)
             }
             auto f = new MediaFile(name);
             //enforce(f.metadata["ARTIST"] == artists[i],"Failed to retrieve Artist for \"" ~ name ~ "\"");
-            writeln(f["ARTIST"]);
+            writeln(f.getARTIST());
             f.close();
             ++i;
         }
+        writeln("Success!");
     }
     catch(Exception e) {
         writeln(e.msg);
@@ -26,7 +27,6 @@ void main(string[] args)
     catch(Error err) {
         writeln(err.msg);
     }
-    writeln("Success!");
 
-    stdin.rawRead(new char[1]);
+    version(Windows) stdin.rawRead(new char[1]);
 }

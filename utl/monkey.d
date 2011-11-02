@@ -5,6 +5,12 @@ import std.stdio,std.conv,std.bitmanip,
     std.traits,std.file;
 import utl.util,utl.ape,utl.id3;
 
+class MonkeyException : Exception {
+    this(string msg) {
+        super(msg);
+    }
+}
+
 class MonkeyFile : UtlFile {
     APE apetags;
     ID3v1 id3tags;
@@ -14,7 +20,7 @@ class MonkeyFile : UtlFile {
         file = File(filename,"rb");
         this.filename = filename;
 
-        enforce(isApe(file),"Invalid Monkey's Audio File: " ~ file.name);
+        enforce(isApe(file),new MonkeyException("Invalid Monkey's Audio File: " ~ file.name));
 
         properties = new MonkeyHeader(file);
 

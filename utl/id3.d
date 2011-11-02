@@ -18,8 +18,7 @@ class ID3v2 : Metadata {
 
     this(ref File file) {
         enforce(hasID3v2(file),new ID3Exception("No ID3v2"));
-        //if(!hasID3v2(file))
-        //    throw new ID3Exception("No ID3v2");
+        debug writeln("Position of ID3v2: ",file.tell-3);
 
         file.seek(3,SEEK_CUR);
         auto x = file.rawRead(new ubyte[4]);
@@ -28,10 +27,10 @@ class ID3v2 : Metadata {
         foreach(i, b; x.reverse) {
             size |= (b & 127) << (i * 7);
         }
-        
         if(size) {
             file.seek(size,SEEK_CUR);
         }
+        throw new ID3Exception("Not implemented yet");
     }
     /**
      * Check for ID3v2 tags in a file
@@ -40,42 +39,49 @@ class ID3v2 : Metadata {
         char[] tmp = new char[3];
 
         tmp = file.rawRead(tmp);
-        
+
         if(tmp != "ID3") {
             file.seek(0);
             tmp = file.rawRead(tmp);
         }
-        
+
         return tmp == "ID3";
     }
 }
 
 private string decodeLatin1(ubyte[] input) {
     string output;
-    
+
     transcode(cast(Latin1String) input, output);
 
     return output;
 }
 
+private string strip(string input) {
+    auto x = countUntil(input,cast(char)0x00);
+    if(x < 0) return input;
+    return std.string.strip(input[0..x]);
+}
+
 class ID3v1 : Metadata {
     this(ref File file) {
         enforce(hasID3v1(file),new ID3Exception(file.name ~ " has no ID3v1"));
+        debug writeln("Position of ID3v1: ", file.tell-3);
 
         auto data = file.rawRead(new ubyte[125]);
         enforce(data.length == 125,new ID3Exception("ID3 data incorrect length"));
         int p;
 
-        this["title"] = strip(decodeLatin1(data[p..p+30])); p+=30;
-        this["artist"] = strip(decodeLatin1(data[p..p+30])); p+=30;
-        this["album"] = strip(decodeLatin1(data[p..p+30])); p+=30;
-        this["year"] = strip(decodeLatin1(data[p..p+4])); p+=4;
+        this["title"] = .strip(decodeLatin1(data[p..p+30])); p+=30;
+        this["artist"] = .strip(decodeLatin1(data[p..p+30])); p+=30;
+        this["album"] = .strip(decodeLatin1(data[p..p+30])); p+=30;
+        this["year"] = .strip(decodeLatin1(data[p..p+4])); p+=4;
         if(data[p+28] == 0x00) {
-            this["comment"] = strip(decodeLatin1(data[p..p+28])); p+=29;
+            this["comment"] = .strip(decodeLatin1(data[p..p+28])); p+=29;
             this["tracknumber"] = to!string(data[p]); ++p;
         }
         else {
-            this["comment"] = strip(decodeLatin1(data[p..p+30])); p+=30;
+            this["comment"] = .strip(decodeLatin1(data[p..p+30])); p+=30;
         }
         this["genre"] = genres[data[p]];
 
@@ -85,10 +91,10 @@ class ID3v1 : Metadata {
             enforce(data.length == 223,new ID3Exception("Enhanced ID3 data incorrect length"));
             file.seek(-227,SEEK_CUR);
 
-            this["title"] ~= strip(decodeLatin1(data[p..p+60])); p+=60;
-            this["artist"] ~= strip(decodeLatin1(data[p..p+60])); p+=60;
-            this["album"] ~= strip(decodeLatin1(data[p..p+60])); p+=61;
-            auto x = strip(decodeLatin1(data[p..p+30])); p+=30;
+            this["title"] ~= .strip(decodeLatin1(data[p..p+60])); p+=60;
+            this["artist"] ~= .strip(decodeLatin1(data[p..p+60])); p+=60;
+            this["album"] ~= .strip(decodeLatin1(data[p..p+60])); p+=61;
+            auto x = .strip(decodeLatin1(data[p..p+30])); p+=30;
             if(x.length) {
                 this["genre"] = x;
             }

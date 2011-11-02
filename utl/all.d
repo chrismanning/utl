@@ -1,6 +1,6 @@
 module utl.all;
 
-public import
+protected import
 utl.ape,
 utl.flac,
 utl.id3,

@@ -14,8 +14,6 @@ class UtlException : Exception {
     }
 }
 
-package:
-
 alias TypeTuple!(FlacFile,WavPackFile,MonkeyFile,Mp3File) FileTypes;
 enum Extensions = [".flac",".wv",".ape",".mp3"];
 
@@ -41,8 +39,7 @@ class MediaFile {
     alias get_Utlfile this;
 }
 
-string generateSwitch(T...)()
-{
+private string generateSwitch(T...)() {
     string result = "switch(extension(filename)) {\n";
     foreach(i,Type; T) {
         string var = "types[" ~ to!string(i) ~ "]";
@@ -57,10 +54,12 @@ string generateSwitch(T...)()
 }
 
 abstract class UtlFile {
+  protected:
     File file;
     Properties properties;
     Metadata metadata;
 
+  public:
     final auto opIndex(string key) {
         return metadata[key];
     }
@@ -74,11 +73,26 @@ abstract class UtlFile {
     }
 
     final void removeTag(string key) {
-        metadata.tags.remove(key);
+        metadata.tags.remove(Key(key));
+    }
+
+    final string printTags() {
+        return to!string(metadata.tags);
+    }
+
+    auto opDispatch(string s)(string input = "") {
+        auto x = toLower(s);
+        if(x.startsWith("get"))
+            x = x[3..$];
+        else if(x.startsWith("set")) {
+            x = x[3..$];
+            this[x] = input;
+        }
+        return this[x];
     }
 }
 
-protected class Props {
+private abstract class Props {
     uint sample_rate;
     ubyte channels;
     ubyte bits_per_sample;
@@ -105,9 +119,10 @@ class Properties : Props {
     }
 }
 
-class Metadata {
+abstract class Metadata {
     Tag!string[Key] tags;
     Tag!(ubyte[])[Key] binaryDataTags;
+    static string delimiter = " ; ";
 
     string opIndex(string key) {
         auto x = Key(key) in binaryDataTags;
@@ -124,17 +139,21 @@ class Metadata {
         else
             tags[Key(key)] = value;
     }
-    void opIndexOpAssign(string op)(string value, string key) if(op == "~") {
+    void opIndexOpAssign(string op)(string value, string key) {
         auto x = Key(key) in tags;
+
         if(x) {
-            *x ~= value;
+            //enable concat assign
+            static if(op == "~") {
+                *x ~= value;
+            }
+            //enable adding multiple values to one field
+            else static if(op == "+") {
+                *x ~= delimiter ~ value;
+            }
         }
         else
             this[key] = value;
-    }
-
-    @property size_t length() {
-        return tags.length + binaryDataTags.length;
     }
 
     auto opDispatch(string s)(string input = "") {
@@ -150,11 +169,11 @@ class Metadata {
 }
 
 struct Tag(T : string) if(isSomeString!T || is(T == ubyte[])) {
-private:
+  private:
     T _value;
     ApeItemType _apeItemType = ApeItemType.text;
 
-public:
+  public:
     this(T value, ApeItemType apeItemType = ApeItemType.text) {
         this.value = value;
         static if(is(T == ubyte[])) {
@@ -238,8 +257,6 @@ public:
         else
             return "[Binary Data: " ~ to!string(length) ~ " bytes]";
     }
-
-    //alias value this;
 }
 
 string genChars() {
@@ -257,11 +274,11 @@ private string validateKey(string key, string allowedChars) {
 }
 
 struct Key {
-private:
+  private:
     string _originalKey;
     string _key;
 
-public:
+  public:
     this(string key, string allowedChars = allowedChars) {
         _originalKey = validateKey(key, allowedChars);
         _key = toLower(_originalKey);
@@ -297,13 +314,10 @@ public:
     string toString() {
         return key;
     }
-
-    //alias key this;
 }
 
-string mkstemp(string input) {
+package string mkstemp(string input) {
     char[] tmp; tmp.length = 6;
-    writeln("in");
     foreach(c; tmp) {
         c = cast(char) uniform(0x30,0x7a);
     }
@@ -311,28 +325,14 @@ string mkstemp(string input) {
     return input ~ cast(string) tmp;
 }
 
-public alias Endian.bigEndian BE;
-public alias Endian.littleEndian LE;
-
-private template TypeFromLength(size_t a) if(a > 0) {
-    static if(a == 1) {
-        alias ubyte TypeFromLength;
-    }
-    else static if(a == 2) {
-        alias ushort TypeFromLength;
-    }
-    else static if(a <= 4) {
-        alias uint TypeFromLength;
-    }
-    else static if(a <= 8) {
-        alias ulong TypeFromLength;
-    }
-}
+package alias Endian.bigEndian BE;
+package alias Endian.littleEndian LE;
 
 /**
  * Converts a ubyte[] to an integral type
  */
-package T toInt(T, Endian endian)(ref ubyte[] source) pure nothrow @safe if (isIntegral!T)
+package T toInt(T, Endian endian = std.system.endian)(ref ubyte[] source)
+pure nothrow @safe if (isIntegral!T)
 in {
     assert(source.length <= T.sizeof);
 }
@@ -365,12 +365,14 @@ if (isIntegral!T) {
     }
 }
 
-public alias bigEndianToNative btn;
-public alias littleEndianToNative ltn;
-public alias nativeToBigEndian ntb;
-public alias nativeToLittleEndian ntl;
+package {
+    alias bigEndianToNative btn;
+    alias littleEndianToNative ltn;
+    alias nativeToBigEndian ntb;
+    alias nativeToLittleEndian ntl;
+}
 
-protected ubyte[T.sizeof] arrayify(T)(T val) pure nothrow @safe if (isNumeric!T || isSomeChar!T) {
+private ubyte[T.sizeof] arrayify(T)(T val) pure nothrow @safe if (isNumeric!T || isSomeChar!T) {
     union U {
         T _val;
         ubyte[T.sizeof] arr;

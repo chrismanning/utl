@@ -1,25 +1,18 @@
 module utl.vorbis;
 import std.stdio,std.outbuffer,std.string,std.algorithm,
     std.traits,std.conv,std.exception;
-import utl.all;
+import utl.util,utl.flac;
 
-private {
-string genChars() {
-    string s;
-    foreach(char c; 0x20..0x7d) {
-        s ~= c;
+class VorbisException : Exception {
+    this(string msg) {
+        super(msg);
     }
-    return tr(s,"=","","d");
 }
 
-enum allowedChars = genChars();
-}
-
-package class VorbisComment : Metadata {
-private:
+class VorbisComment : Metadata {
+  private:
     MetadataBlockHeader header;
     string vendorString;
-    //string[] user_comment_list;
 
     this(ubyte[] data) {
         int p;
@@ -32,20 +25,27 @@ private:
 
         foreach(i; 0..userCommentListLength) {
             auto commentLength = toInt!(uint,LE)(data[p..p+4]); p+=4;
+            try {
             auto tmp = cast(string) data[p..p+commentLength];
             p+=commentLength;
-            
+
             auto x = findSplitBefore(tmp,"=");
             skipOver(x[1],"=");
 
-            this[x[0]] = x[1];
+            this[x[0]] += x[1];
+            }
+            catch(Error e) {
+                writeln("length: " ,commentLength);
+                writeln("position in data: ",p);
+                writeln("data length: ", data.length);
+            }
         }
     }
 
     OutBuffer write() {
         auto buf = new OutBuffer;
-        writeln("old length: ", header.block_length);
-        writeln("new length: ", this.length);
+        debug writeln("old length: ", header.block_length);
+        debug writeln("new length: ", this.length);
 
         header.block_length = this.length;
         buf.write(cast(ubyte[]) header);
@@ -62,7 +62,7 @@ private:
         return buf;
     }
 
-public:
+  package:
     this(ref File f, MetadataBlockHeader _header) {
         header = _header;
         ubyte[] data = new ubyte[header.block_length];
@@ -79,21 +79,26 @@ public:
     string[] makeCommentList() {
         string[] tmp;
         foreach(key,value; tags) {
-            tmp ~= [key.originalKey ~ "=" ~ value.value];
+            if(canFind(value.value, delimiter)) {
+                foreach(s; splitter(value.value, delimiter)) {
+                    tmp ~= [key.originalKey ~ "=" ~ s];
+                }
+            }
+            else tmp ~= [key.originalKey ~ "=" ~ value.value];
         }
         return tmp;
     }
 
-    @property override uint length() {
+    @property uint length() {
         uint sum;
         sum += 4;
         sum += vendorString.length;
         sum += 4;
-        //sum += super.length;
-        foreach(key,value; tags) {
-            sum += key.length + value.length + 5;
+
+        foreach(s; makeCommentList()) {
+            sum += s.length + 4;
         }
-       
+
         return sum;
     }
 
@@ -106,3 +111,13 @@ public:
         }
     }
 }
+
+private string genChars() {
+    string s;
+    foreach(char c; 0x20..0x7d) {
+        s ~= c;
+    }
+    return tr(s,"=","","d");
+}
+
+private enum allowedChars = genChars();

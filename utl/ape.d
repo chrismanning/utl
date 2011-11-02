@@ -4,9 +4,6 @@ import std.stdio,std.conv,std.bitmanip,
     std.file,std.exception,std.typecons,
     std.string,std.outbuffer,std.traits;
 import utl.util;
-import core.bitop;
-
-package :
 
 enum HeaderSize = 32;
 enum ApeItemType : ubyte {
@@ -16,7 +13,7 @@ enum ApeItemType : ubyte {
 }
 
 private struct Flags {
-    private ubyte _flags;
+    ubyte _flags;
 
     this(uint f) {
         flags = cast(ubyte) (f & 7) | (f >> 26);
@@ -25,18 +22,6 @@ private struct Flags {
     this(ApeItemType itemType) {
         flags = cast(ubyte) (itemType << 1);
     }
-
-//     this(bool isFooter, bool hasHeader, ubyte itemType) {
-//         flags = new size_t;
-//
-//         if(!isFooter)
-//             bts(flags,29);
-//         else if(hasHeader)
-//             bts(flags,31);
-//
-//         if(itemType)
-//             *flags |= (itemType & 3) << 1;
-//     }
 
     ref Flags opAssign(T)(T f) if(is(T == Flags) || is(T == uint)) {
         static if(is(T == uint))
@@ -47,7 +32,7 @@ private struct Flags {
     }
 
     @property {
-        private void flags(ubyte f) {
+        void flags(ubyte f) {
             _flags = f;
         }
         ubyte flags() {
@@ -75,7 +60,7 @@ private struct Flags {
 }
 
 class APEHeader {
-private :
+  private:
     static string preamble = "APETAGEX";
     static immutable Size = 32;
 
@@ -100,7 +85,7 @@ private :
         return buf;
     }
 
-public:
+  public:
     this(ubyte[] data) {
         int p;
 
@@ -157,7 +142,7 @@ public:
 }
 
 class APE : Metadata {
-private:
+  private:
     APEHeader header;
     APEHeader footer;
     ulong _tagStart;
@@ -232,7 +217,7 @@ private:
         foreach(key,value; binaryDataTags) {
             tagSize += (9 + key.length + value.length);
             buf.write(ntl(cast(uint) value.length));
-            writeln(cast(ubyte)value.apeItemType);
+            debug writeln(cast(ubyte)value.apeItemType);
             buf.write(ntl(cast(uint) Flags(value.apeItemType)));
             buf.write(key.originalKey ~ 0x00);
             buf.write(value.value);
@@ -249,7 +234,7 @@ private:
         return buf;
     }
 
-public:
+  public:
     this(ref File file) {
         ubyte[] data;
 
@@ -262,6 +247,7 @@ public:
         }
 
         file.seek(-8,SEEK_CUR);
+        debug writeln("Position of APE: ",file.tell);
 
         footer = new APEHeader(file.rawRead(new ubyte[32]));
         //enforce(hasFooter ? isFooter : !isFooter);
@@ -302,4 +288,3 @@ class APEException : Exception {
         super(msg);
     }
 }
-

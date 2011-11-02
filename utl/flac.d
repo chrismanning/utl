@@ -78,7 +78,7 @@ class MetadataBlockHeader {
         }
     }
 
-    string toString() {
+    override string toString() {
         return "last: " ~ to!string(last) ~ " | type: "
             ~ to!string(block_type) ~ " | length: " ~ to!string(block_length);
     }
@@ -126,7 +126,7 @@ class MetadataBlock {
 }
 
 class StreamInfo : Properties {
-private {
+  private:
     MetadataBlockHeader header;
 
     ushort min_block_size;
@@ -190,9 +190,8 @@ private {
 
         return buf;
     }
-    }
 
-public {
+  public:
     this(ref File file, uint block_length) {
         ubyte[] data = new ubyte[block_length];
         file.rawRead(data);
@@ -212,7 +211,6 @@ public {
             return write().toBytes();
         }
     }
-    }
 }
 
 class Padding {
@@ -222,8 +220,6 @@ class Padding {
         header = _header;
         f.seek(header.block_length,SEEK_CUR);
     }
-
-    alias asBytes this;
 
     @property {
         private ubyte[] asBytes() {
@@ -352,34 +348,11 @@ class CueSheetTrack {
     bool pre_emphasis;
     //ubyte index_points;
     CueSheetTrackIndex[] track_indexes;
-
-    this(string s,bool isCD) {
-        int p;
-        track_offset = parse!ulong(s[p..p+64],2); p+=64;
-        track_number = parse!ubyte(s[p..p+8],2); p+=8;
-        for(int i=p;i<p+(12*8);i+=8) {
-            isrc ~= cast(char)parse!ubyte(s[i..i+8],2);
-        }
-        p += 12 * 8;
-        track_type = cast(bool)to!ubyte(s[p]); ++p;
-        pre_emphasis = cast(bool)to!ubyte(s[p]); ++p;
-        p += 110;
-        track_indexes.length = parse!ubyte(s[p..p+8]); p+=8;
-        foreach(t;track_indexes) {
-            t = new CueSheetTrackIndex(s[p..$],isCD);
-            p += 96;
-        }
-    }
 }
 
 class CueSheetTrackIndex {
     ulong index_offset;
     ubyte index_point_num;
-
-    this(string s,bool isCD) {
-        index_offset = parse!ulong(s[0..64],2);
-        index_point_num = parse!ubyte(s[64..72],2);
-    }
 }
 
 class Picture {
@@ -459,6 +432,10 @@ enum minPaddingSize = 4096;
 T makePositive(T)(T a) pure nothrow @safe if(isSigned!T) {
     return a < 0 ? -a : a;
 }
+unittest {
+    assert(makePositive(-4) == 4);
+    assert(makePositive(0xF) == 0XF);
+}
 
 private string generateSwitches(T...)()
 {
@@ -477,11 +454,11 @@ private string generateSwitches(T...)()
 }
 
 class FlacFile : UtlFile {
-private {
+  private:
     Flac flac;
     ID3v2 id3tags;
-}
-public {
+
+  public:
     string filename;
     uint initialSize;
 
@@ -494,7 +471,7 @@ public {
             file.seek(0);
         }
 
-        enforce(isFlac(file),new FlacException("flac doesnt start at: " ~ to!string(file.tell)));
+        enforce(isFlac(file),new FlacException("No FLAC metadata detected in file: " ~ file.name));
         flac = new Flac(file);
         properties = flac.blocks[BlockType!StreamInfo];
         metadata = flac.blocks[BlockType!VorbisComment];
@@ -532,12 +509,17 @@ public {
             file.open(filename,"rb+");
         else return;
 
-        writeln("Saving file: " ~ filename);
-        writeln("Padding: ",calcPadding(initialSize - newSize));
+        debug writeln("Saving file: " ~ filename);
+        debug writeln("Padding: ",calcPadding(initialSize - newSize));
+
+        //TODO use async I/O here
         if(!hasPadding || calcPadding(initialSize - newSize) == minPaddingSize) {
-            writeln("Rewriting file: " ~ filename);
+            debug writeln("Rewriting file: " ~ filename);
+
             flac.blocks[BlockType!Padding].header.block_length = calcPadding(initialSize - newSize);
-            writeln(flac.blocks[BlockType!Padding].header.block_length);
+
+            debug writeln("calculated padding size: ",
+                          flac.blocks[BlockType!Padding].header.block_length);
             buf.write(cast(ubyte[]) flac.blocks[BlockType!Padding]);
 
             //auto a = cast(char*)toStringz(file.name ~ "XXXXXX");
@@ -559,7 +541,7 @@ public {
             std.file.rename(tmpname,filename);
         }
         else {
-            writeln("No need to rewrite file: " ~ filename);
+            debug writeln("No need to rewrite file: " ~ filename);
             flac.blocks[BlockType!Padding].header.block_length += initialSize - newSize;
             buf.write(cast(ubyte[]) flac.blocks[BlockType!Padding]);
             file.rawWrite(buf.toBytes);
@@ -571,6 +553,8 @@ public {
         else file.open(filename,"rb");
     }
 }
+
+unittest {
 }
 
 class Flac {
@@ -583,7 +567,7 @@ class Flac {
     this(ref File file) {
         headers ~= new MetadataBlockHeader(file);
         enforce(headers[0].block_type == BlockType!StreamInfo,
-                "No stream info, invalid FLAC");
+                new FlacException("No stream info, invalid FLAC file: " ~ file.name));
 
         blocks[BlockType!StreamInfo] = new StreamInfo(file, headers[0]);
 
@@ -596,17 +580,15 @@ class Flac {
     OutBuffer write() {
         auto buf = new OutBuffer;
         buf.write(marker);
-        writeln("size: ",size);
+        debug writeln("size: ",size);
         foreach(i,T; blocks.Types) {
             if(blocks[BlockType!T] !is null) {
-                writeln(typeid(T));
+                debug writeln(typeid(T));
                 if(is(T == Padding))
                     continue;
-                writeln("in loop");
                 buf.write(cast(ubyte[])blocks[BlockType!T]);
             }
         }
-        writeln(buf.toBytes.length);
 
         return buf;
     }

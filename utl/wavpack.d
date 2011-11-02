@@ -12,13 +12,13 @@ class WavPackException : Exception {
     }
 }
 
-static immutable ubyte[4] BPS = [8,16,24,32];
-static immutable uint[15] SampleRates = [6000, 8000, 9600, 11025, 12000, 16000, 22050,
+private static immutable ubyte[4] BPS = [8,16,24,32];
+private static immutable uint[15] SampleRates =
+    [6000, 8000, 9600, 11025, 12000, 16000, 22050,
     24000, 32000, 44100, 48000, 64000, 88200, 96000, 192000];
 
 class WavPackFile : UtlFile {
     string filename;
-    //File file;
     ID3v1 id3tags;
     APE apetags;
 
@@ -69,7 +69,7 @@ class WavPackFile : UtlFile {
     }
 }
 
-class WavPackInfo : Properties {
+private class WavPackInfo : Properties {
     this(ref File file) {
         enforce(WavPackFile.isWavPack(file),new WavPackException("Not a wavpack"));
 
