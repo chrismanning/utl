@@ -30,6 +30,7 @@ class Mp3File : UtlFile {
             id3v2tags = new ID3v2(file);
         }
         catch(ID3Exception e) {
+            debug writeln(to!string(typeid(this)) ~ ": " ~ e.msg);
         }
 
         if(id3v2tags) {
@@ -42,6 +43,7 @@ class Mp3File : UtlFile {
             id3v1tags = new ID3v1(file);
         }
         catch(ID3Exception e) {
+            debug writeln(to!string(typeid(this)) ~ ": " ~ e.msg);
         }
 
         if(id3v1tags && !id3v2tags) {
@@ -52,6 +54,7 @@ class Mp3File : UtlFile {
             apetags = new APE(file);
         }
         catch(APEException e) {
+            debug writeln(to!string(typeid(this)) ~ ": " ~ e.msg);
         }
     }
 

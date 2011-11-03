@@ -471,7 +471,7 @@ class FlacFile : UtlFile {
             file.seek(0);
         }
 
-        enforce(isFlac(file),new FlacException("No FLAC metadata detected in file: " ~ file.name));
+        enforceEx!FlacException(isFlac(file),"Not a FLAC: " ~ file.name);
         flac = new Flac(file);
         properties = flac.blocks[BlockType!StreamInfo];
         metadata = flac.blocks[BlockType!VorbisComment];
@@ -509,16 +509,13 @@ class FlacFile : UtlFile {
             file.open(filename,"rb+");
         else return;
 
-        debug writeln("Saving file: " ~ filename);
-        debug writeln("Padding: ",calcPadding(initialSize - newSize));
-
         //TODO use async I/O here
         if(!hasPadding || calcPadding(initialSize - newSize) == minPaddingSize) {
-            debug writeln("Rewriting file: " ~ filename);
+            debug writeln(to!string(typeid(this)) ~ ": Rewriting file: " ~ filename);
 
             flac.blocks[BlockType!Padding].header.block_length = calcPadding(initialSize - newSize);
 
-            debug writeln("calculated padding size: ",
+            debug writeln(to!string(typeid(this)) ~ ": calculated padding size: ",
                           flac.blocks[BlockType!Padding].header.block_length);
             buf.write(cast(ubyte[]) flac.blocks[BlockType!Padding]);
 
@@ -541,7 +538,7 @@ class FlacFile : UtlFile {
             std.file.rename(tmpname,filename);
         }
         else {
-            debug writeln("No need to rewrite file: " ~ filename);
+            debug writeln(to!string(typeid(this)) ~ ": No need to rewrite file: " ~ filename);
             flac.blocks[BlockType!Padding].header.block_length += initialSize - newSize;
             buf.write(cast(ubyte[]) flac.blocks[BlockType!Padding]);
             file.rawWrite(buf.toBytes);
@@ -566,8 +563,8 @@ class Flac {
 
     this(ref File file) {
         headers ~= new MetadataBlockHeader(file);
-        enforce(headers[0].block_type == BlockType!StreamInfo,
-                new FlacException("No stream info, invalid FLAC file: " ~ file.name));
+        enforceEx!FlacException(headers[0].block_type == BlockType!StreamInfo,
+                "No stream info, invalid FLAC file: " ~ file.name);
 
         blocks[BlockType!StreamInfo] = new StreamInfo(file, headers[0]);
 
@@ -580,10 +577,9 @@ class Flac {
     OutBuffer write() {
         auto buf = new OutBuffer;
         buf.write(marker);
-        debug writeln("size: ",size);
+        debug writeln(to!string(typeid(this)) ~ ": size: ",size);
         foreach(i,T; blocks.Types) {
             if(blocks[BlockType!T] !is null) {
-                debug writeln(typeid(T));
                 if(is(T == Padding))
                     continue;
                 buf.write(cast(ubyte[])blocks[BlockType!T]);

@@ -89,7 +89,7 @@ class APEHeader {
     this(ubyte[] data) {
         int p;
 
-        enforce(data[p..8] == APEHeader.preamble, "Invalid APE header");
+        enforceEx!APEException(data[p..8] == APEHeader.preamble, "Invalid APE header");
         p+=8;
 
         apeVersion = toInt!(uint,LE)(data[p..p+4]); p+=4;
@@ -217,7 +217,6 @@ class APE : Metadata {
         foreach(key,value; binaryDataTags) {
             tagSize += (9 + key.length + value.length);
             buf.write(ntl(cast(uint) value.length));
-            debug writeln(cast(ubyte)value.apeItemType);
             buf.write(ntl(cast(uint) Flags(value.apeItemType)));
             buf.write(key.originalKey ~ 0x00);
             buf.write(value.value);
@@ -238,16 +237,10 @@ class APE : Metadata {
     this(ref File file) {
         ubyte[] data;
 
-        if(file.tell >= 32)
-            file.seek(-32,SEEK_CUR);
-        if(file.rawRead(new char[8]) != "APETAGEX") {
-            file.seek(-32,SEEK_END);
-            enforce(file.rawRead(new char[8]) == "APETAGEX",
-                    new APEException("Invalid APE Header"));
-        }
+        enforceEx!APEException(hasAPE(file),"No APE tags found: " ~ file.name);
 
         file.seek(-8,SEEK_CUR);
-        debug writeln("Position of APE: ",file.tell);
+        debug writeln(to!string(typeid(this)) ~ ": Position of APE: ",file.tell);
 
         footer = new APEHeader(file.rawRead(new ubyte[32]));
         //enforce(hasFooter ? isFooter : !isFooter);
@@ -258,7 +251,20 @@ class APE : Metadata {
         data = file.rawRead(new ubyte[footer.tagSize + 32]);
         this(data);
     }
-    this(ref File file, bool) {
+    this() {
+    }
+
+    static bool hasAPE(ref File file) {
+        if(file.tell >= 32)
+            file.seek(-32,SEEK_CUR);
+
+        if(file.rawRead(new char[8]) != "APETAGEX") {
+            file.seek(-32,SEEK_END);
+            return file.rawRead(new char[8]) == "APETAGEX";
+        }
+        else return true;
+
+        return false;
     }
 
     T opCast(T)() {

@@ -20,16 +20,18 @@ class MonkeyFile : UtlFile {
         file = File(filename,"rb");
         this.filename = filename;
 
-        enforce(isApe(file),new MonkeyException("Invalid Monkey's Audio File: " ~ file.name));
+        enforceEx!MonkeyException(isApe(file),"Invalid Monkey's Audio File: " ~ file.name);
 
         properties = new MonkeyHeader(file);
 
         try id3tags = new ID3v1(file);
         catch(ID3Exception e) {
+            debug writeln(to!string(typeid(this)) ~ ": " ~ e.msg);
         }
 
         try apetags = new APE(file);
         catch(APEException e) {
+            debug writeln(to!string(typeid(this)) ~ ": " ~ e.msg);
         }
 
         if(apetags)
@@ -37,7 +39,7 @@ class MonkeyFile : UtlFile {
         else if(id3tags)
             metadata = id3tags;
         else
-            metadata = new APE(file, true);
+            metadata = new APE;
     }
 
     static bool isApe(ref File file) {

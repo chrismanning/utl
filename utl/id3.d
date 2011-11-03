@@ -18,11 +18,10 @@ class ID3v2 : Metadata {
 
     this(ref File file) {
         enforce(hasID3v2(file),new ID3Exception("No ID3v2"));
-        debug writeln("Position of ID3v2: ",file.tell-3);
+        debug writeln(to!string(typeid(this)) ~ ": Position of tag: ",file.tell-3);
 
         file.seek(3,SEEK_CUR);
         auto x = file.rawRead(new ubyte[4]);
-        //x = x[3..$];
 
         foreach(i, b; x.reverse) {
             size |= (b & 127) << (i * 7);
@@ -30,7 +29,7 @@ class ID3v2 : Metadata {
         if(size) {
             file.seek(size,SEEK_CUR);
         }
-        throw new ID3Exception("Not implemented yet");
+        throw new ID3Exception("ID3v2 not implemented yet");
     }
     /**
      * Check for ID3v2 tags in a file
@@ -65,11 +64,11 @@ private string strip(string input) {
 
 class ID3v1 : Metadata {
     this(ref File file) {
-        enforce(hasID3v1(file),new ID3Exception(file.name ~ " has no ID3v1"));
-        debug writeln("Position of ID3v1: ", file.tell-3);
+        enforceEx!ID3Exception(hasID3v1(file),"No ID3v1 found: " ~ file.name);
+        debug writeln(to!string(typeid(this)) ~ ": Position of tag: ", file.tell-3);
 
         auto data = file.rawRead(new ubyte[125]);
-        enforce(data.length == 125,new ID3Exception("ID3 data incorrect length"));
+        enforceEx!ID3Exception(data.length == 125,"ID3 data incorrect length");
         int p;
 
         this["title"] = .strip(decodeLatin1(data[p..p+30])); p+=30;
@@ -86,9 +85,11 @@ class ID3v1 : Metadata {
         this["genre"] = genres[data[p]];
 
         if(hasEnhancedID3v1(file)) {
+            debug writeln(to!string(typeid(this)) ~ ": Found enhanced id3v1 tag at: "
+                ~ to!string(file.tell-4));
             p = 0;
             data = file.rawRead(new ubyte[223]);
-            enforce(data.length == 223,new ID3Exception("Enhanced ID3 data incorrect length"));
+            enforceEx!ID3Exception(data.length == 223,"Enhanced ID3 data incorrect length");
             file.seek(-227,SEEK_CUR);
 
             this["title"] ~= .strip(decodeLatin1(data[p..p+60])); p+=60;
@@ -100,6 +101,7 @@ class ID3v1 : Metadata {
             }
             file.seek(-335,SEEK_END);
         }
+        //leave file at start of id3v1 to make ape tags easier to find
         else
             file.seek(-128,SEEK_END);
     }

@@ -25,7 +25,6 @@ class VorbisComment : Metadata {
 
         foreach(i; 0..userCommentListLength) {
             auto commentLength = toInt!(uint,LE)(data[p..p+4]); p+=4;
-            try {
             auto tmp = cast(string) data[p..p+commentLength];
             p+=commentLength;
 
@@ -33,19 +32,13 @@ class VorbisComment : Metadata {
             skipOver(x[1],"=");
 
             this[x[0]] += x[1];
-            }
-            catch(Error e) {
-                writeln("length: " ,commentLength);
-                writeln("position in data: ",p);
-                writeln("data length: ", data.length);
-            }
         }
     }
 
     OutBuffer write() {
         auto buf = new OutBuffer;
-        debug writeln("old length: ", header.block_length);
-        debug writeln("new length: ", this.length);
+        debug writeln(to!string(typeid(this)) ~ ": old length: ", header.block_length);
+        debug writeln(to!string(typeid(this)) ~ ": new length: ", this.length);
 
         header.block_length = this.length;
         buf.write(cast(ubyte[]) header);
