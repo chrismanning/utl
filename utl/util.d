@@ -358,10 +358,10 @@ package ubyte[] pack(Endian endian, T)(T input, size_t bytes = T.sizeof)
 if (isIntegral!T) {
     ubyte[] a = new ubyte[bytes];
     static if(endian == BE) {
-        return ntb(input)[$-bytes..$];
+        return ntb(input).dup[$-bytes..$];
     }
     else static if (endian == LE) {
-        return ntl(input)[0..bytes];
+        return ntl(input).dup[0..bytes];
     }
 }
 
