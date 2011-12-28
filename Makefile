@@ -6,8 +6,8 @@ OBJS := $(patsubst %.d, %.o, $(SRCS))
 
 FLAGS = -gc
 
-libutl: $(OBJS)
-	$(DMD) $(FLAGS) -lib $(OBJS) -of$@.a
+libutl: $(SRCS)
+	$(DMD) $(FLAGS) -lib $(SRCS) -of$@.a
 
 unittest: unittests.d
 	$(DMD) $(FLAGS) -debug -$@ $@s.d $(SRCS) -of$@
