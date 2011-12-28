@@ -18,7 +18,7 @@ private static immutable uint[15] SampleRates =
     24000, 32000, 44100, 48000, 64000, 88200, 96000, 192000];
 
 class WavPackFile : UtlFile {
-    string filename;
+    private string filename;
     ID3v1 id3tags;
     APE apetags;
 

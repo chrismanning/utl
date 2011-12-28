@@ -14,7 +14,7 @@ class MonkeyException : Exception {
 class MonkeyFile : UtlFile {
     APE apetags;
     ID3v1 id3tags;
-    string filename;
+    private string filename;
 
     this(string filename) {
         file = File(filename,"rb");
@@ -84,12 +84,12 @@ class MonkeyHeader : Properties {
             data = file.rawRead(new ubyte[70]);
 
             int p = 50;
-            uint blocks_per_frame = toInt!(uint,LE)(data[p..p+4]); p+=4;
-            uint final_frame_blocks = toInt!(uint,LE)(data[p..p+4]); p+=4;
-            uint total_frames = toInt!(uint,LE)(data[p..p+4]); p+=4;
+            uint blocks_per_frame   =     toInt!(uint,LE)(data[p..p+4]);   p+=4;
+            uint final_frame_blocks =     toInt!(uint,LE)(data[p..p+4]);   p+=4;
+            uint total_frames       =     toInt!(uint,LE)(data[p..p+4]);   p+=4;
             bits_per_sample = cast(ubyte) toInt!(ushort,LE)(data[p..p+2]); p+=2;
-            channels = cast(ubyte) toInt!(ushort,LE)(data[p..p+2]); p+=2;
-            sample_rate = toInt!(uint,LE)(data[p..p+4]); p+=4;
+            channels        = cast(ubyte) toInt!(ushort,LE)(data[p..p+2]); p+=2;
+            sample_rate     =             toInt!(uint,LE)(data[p..p+4]);   p+=4;
 
             samples = --total_frames * blocks_per_frame + final_frame_blocks;
 
