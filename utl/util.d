@@ -328,9 +328,7 @@ package string mkstemp(string input) {
 package alias Endian.bigEndian BE;
 package alias Endian.littleEndian LE;
 
-/**
- * Converts a ubyte[] to an integral type
- */
+/// Converts a ubyte[] to an integral type
 package T toInt(T, Endian endian = std.system.endian)(ref ubyte[] source)
 pure nothrow @safe if (isIntegral!T)
 in {
@@ -340,20 +338,16 @@ body {
     auto padding = T.sizeof - source.length;
     ubyte[T.sizeof] tmp;
     static if (endian == BE) {
-        //return btn!(T,T.sizeof)(arrayify((cast(T[])(new ubyte[padding] ~ source))[0]));
         tmp = new ubyte[padding] ~ source;
         return btn!T(tmp);
     }
     else static if (endian == LE) {
-        //return ltn!(T,T.sizeof)(arrayify((cast(T[])(source ~ new ubyte[padding]))[0]));
         tmp = source ~ new ubyte[padding];
         return ltn!T(tmp);
     }
 }
 
-/**
- * returns a ubyte[] of given input packed into size bytes and of the given endianness
- */
+/// Returns a ubyte[] of given input packed into size bytes and of the given endianness
 package ubyte[] pack(Endian endian, T)(T input, size_t bytes = T.sizeof)
 if (isIntegral!T) {
     ubyte[] a = new ubyte[bytes];
