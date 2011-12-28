@@ -215,6 +215,7 @@ struct Tag(T) if(isSomeString!T || is(T == ubyte[])) {
                 try validate(s);
                 catch(UtfException e) {
                     value = "";
+                    return this;
                 }
             }
             static if(is(S == ubyte[]))
@@ -246,7 +247,9 @@ struct Tag(T) if(isSomeString!T || is(T == ubyte[])) {
 
     string toString() {
         static if(isSomeString!T) {
-            return value;
+            static if(!is(T == string))
+                return to!string(value);
+            else return value;
         }
         else
             return "[Binary Data: " ~ to!string(length) ~ " bytes]";

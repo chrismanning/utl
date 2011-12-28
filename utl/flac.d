@@ -315,7 +315,7 @@ class CueSheet {
     bool isCD;
     ubyte number_of_tracks;
     CueSheetTrack[] tracks;
-    
+
     this(ref File f, MetadataBlockHeader _header) {
         header = _header;
         ubyte[] data = new ubyte[header.block_length];
