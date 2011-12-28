@@ -13,7 +13,7 @@ void main(string[] args)
             }
         try {
             auto f = new MediaFile(name);
-            writeln(f.getARTIST());
+            writeln(f["artist"]);
             f.close();
         }
         catch(Exception e) {
