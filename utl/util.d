@@ -57,15 +57,15 @@ abstract class UtlFile {
   protected:
     File file;
     Properties properties;
-    Metadata metadata;
+    Metadata_I metadata;
 
   public:
-    final auto opIndex(string key) {
-        return metadata[key];
-    }
-
     final void close() {
         file.close();
+    }
+
+    final auto opIndex(string key) {
+        return metadata[key];
     }
 
     final void opIndexAssign(string value, string key) {
@@ -73,11 +73,11 @@ abstract class UtlFile {
     }
 
     final void removeTag(string key) {
-        metadata.tags.remove(Key(key));
+        metadata.remove(Key(key));
     }
 
     final string printTags() {
-        return to!string(metadata.tags);
+        return to!string(metadata);
     }
 
     auto opDispatch(string s)(string input = "") {
@@ -119,56 +119,50 @@ class Properties : Props {
     }
 }
 
-abstract class Metadata {
-    Tag!string[Key] tags;
-    Tag!(ubyte[])[Key] binaryDataTags;
-    static string delimiter = " ; ";
+private abstract class Metadata_I {
+    string opIndex(string key);
+    void opIndexAssign(T_V, T_K)(T_V value, T_K key);
+    void opIndexOpAssign(string op)(string value, string key);
+    void assign(string key, string value);
+    void remove(Key key);
+    string toString();
+}
 
-    string opIndex(string key) {
-        auto x = Key(key) in binaryDataTags;
-        if(x)
-            return to!string(*x);
-        return tags.get(Key(key),Tag!string("")).value;
+abstract class Metadata(T) if(isSomeString!T || is(T == ubyte[])) : Metadata_I {
+    protected Tag!T[Key] tags;
+
+    void assign(string key, string value) {
+        this[key] = value;
     }
 
-    void opIndexAssign(T,S)(T value, S key)
-    if((isSomeString!T || is(T == Tag!string) || is(T == ubyte[]))
-        && (isSomeString!S || is(S == Key))) {
-        static if(is(T == ubyte[]))
-            binaryDataTags[Key(key)] = value;
-        else
-            tags[Key(key)] = value;
+    final string opIndex(string key) {
+        return to!string(tags.get(Key(key),Tag!T("")));
     }
-    void opIndexOpAssign(string op)(string value, string key) {
-        auto x = Key(key) in tags;
 
-        if(x) {
-            //enable concat assign
-            static if(op == "~") {
-                *x ~= value;
-            }
-            //enable adding multiple values to one field
-            else static if(op == "+") {
-                *x ~= delimiter ~ value;
+    final void opIndexAssign(T_V = T, T_K)(T_V value, T_K key)
+        if((isSomeString!T_V || is(T_V == Tag)) && (isSomeString!T_K || is(T_K == Key)))
+    {
+        static if(!is(T_V == T)) {
+            static if(isSomeString!T) {
+                tags[Key(key)] = to!T(value);
             }
         }
-        else
-            this[key] = value;
+        else tags[Key(key)] = value;
     }
 
-    auto opDispatch(string s)(string input = "") {
-        auto x = toLower(s);
-        if(x.startsWith("get"))
-            x = x[3..$];
-        else if(x.startsWith("set")) {
-            x = x[3..$];
-            this[x] = input;
-        }
-        return this[x];
+    final void opIndexOpAssign(string op)(string value, string key) {
+    }
+
+    void remove(Key key) {
+        tags.remove(key);
+    }
+
+    string toString() {
+        return to!string(tags);
     }
 }
 
-struct Tag(T : string) if(isSomeString!T || is(T == ubyte[])) {
+struct Tag(T) if(isSomeString!T || is(T == ubyte[])) {
   private:
     T _value;
     ApeItemType _apeItemType = ApeItemType.text;

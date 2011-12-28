@@ -9,7 +9,7 @@ class VorbisException : Exception {
     }
 }
 
-class VorbisComment : Metadata {
+class VorbisComment : Metadata!string {
   private:
     MetadataBlockHeader header;
     string vendorString;
@@ -31,7 +31,7 @@ class VorbisComment : Metadata {
             auto x = findSplitBefore(tmp,"=");
             skipOver(x[1],"=");
 
-            this[x[0]] += x[1];
+            this[x[0]] = x[1];
         }
     }
 
@@ -64,20 +64,16 @@ class VorbisComment : Metadata {
         this(data);
     }
 
-    void opIndexAssign(T,S)(T value, S key)
-    if((isSomeString!T || is(T == Tag)) && (isSomeString!S || is(S == Key))) {
+    public void opIndexAssign(T_V = T, T_K)(T_V value, T_K key)
+    if((isSomeString!T_V || is(T_V == Tag)) && (isSomeString!T_K || is(T_K == Key)))
+    {
         tags[Key(key,allowedChars)] = value;
     }
 
     string[] makeCommentList() {
         string[] tmp;
         foreach(key,value; tags) {
-            if(canFind(value.value, delimiter)) {
-                foreach(s; splitter(value.value, delimiter)) {
-                    tmp ~= [key.originalKey ~ "=" ~ s];
-                }
-            }
-            else tmp ~= [key.originalKey ~ "=" ~ value.value];
+            tmp ~= [key.originalKey ~ "=" ~ value.value];
         }
         return tmp;
     }

@@ -13,7 +13,7 @@ class ID3Exception : Exception {
     }
 }
 
-class ID3v2 : Metadata {
+class ID3v2 : Metadata!wstring {
     uint size;
 
     this(ref File file) {
@@ -62,7 +62,7 @@ private string strip(string input) {
     return std.string.strip(input[0..x]);
 }
 
-class ID3v1 : Metadata {
+class ID3v1 : Metadata!string {
     this(ref File file) {
         enforceEx!ID3Exception(hasID3v1(file),"No ID3v1 found: " ~ file.name);
         debug writeln(to!string(typeid(this)) ~ ": Position of tag: ", file.tell-3);

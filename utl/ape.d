@@ -141,7 +141,7 @@ class APEHeader {
     }
 }
 
-class APE : Metadata {
+class APE : Metadata!string {
   private:
     APEHeader header;
     APEHeader footer;
