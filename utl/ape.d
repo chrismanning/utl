@@ -183,13 +183,14 @@ class APE : Metadata {
                 p+=value_length;
             }
             else if(flags.itemType == ApeItemType.binary){
-                this[key] = data[p..p+value_length];
+//                 this[key] = data[p..p+value_length];
                 p+=value_length;
             }
             else {
                 auto value = cast(string)data[p..p+value_length];
                 p+=value_length;
-                this[key] = Tag!string(value,ApeItemType.external);
+                this[key] = value;
+//                 this[key] = Tag!string(value,ApeItemType.external);
             }
         }
     }
@@ -214,13 +215,13 @@ class APE : Metadata {
             buf.write(key.originalKey ~ 0x00);
             buf.write(to!string(value));
         }
-        foreach(key,value; binaryDataTags) {
-            tagSize += (9 + key.length + value.length);
-            buf.write(ntl(cast(uint) value.length));
-            buf.write(ntl(cast(uint) Flags(value.apeItemType)));
-            buf.write(key.originalKey ~ 0x00);
-            buf.write(value.value);
-        }
+//         foreach(key,value; binaryDataTags) {
+//             tagSize += (9 + key.length + value.length);
+//             buf.write(ntl(cast(uint) value.length));
+//             buf.write(ntl(cast(uint) Flags(value.apeItemType)));
+//             buf.write(key.originalKey ~ 0x00);
+//             buf.write(value.value);
+//         }
 
         if(footer) {
             footer.tagSize = tagSize;
