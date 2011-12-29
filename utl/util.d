@@ -17,40 +17,21 @@ class UtlException : Exception {
 alias TypeTuple!(FlacFile,WavPackFile,MonkeyFile,Mp3File) FileTypes;
 enum Extensions = [".flac",".wv",".ape",".mp3"];
 
-class MediaFile {
-    private FileTypes types;
-    private UtlFile _utlfile;
-
-    this(string filename) {
-        mixin(generateSwitch!FileTypes);
+/**
+ * Passes $(D_PARAM filename) along to the appropriate class, determined by its extension
+ * Returns a $(B UtlFile).
+ */
+UtlFile openMediaFile(string filename) {
+    auto idx = countUntil(Extensions, extension(filename));
+    if(idx == -1) {
+        throw new UtlException("File type not supported for file: " ~ filename);
     }
-
-    @property {
-        private void set_Utlfile(UtlFile a) {
-            _utlfile = a;
-        }
-        UtlFile get_Utlfile() {
-            return _utlfile;
-        }
+    FileTypes types;
+    foreach(i, Type; types) {
+        if(i == idx)
+            return new typeof(Type)(filename);
     }
-
-    void delegate(bool stripID3 = false) save;
-
-    alias get_Utlfile this;
-}
-
-private string generateSwitch(T...)() {
-    string result = "switch(extension(filename)) {\n";
-    foreach(i,Type; T) {
-        string var = "types[" ~ to!string(i) ~ "]";
-        result ~= "case Extensions[" ~ to!string(i) ~ "]:\n"
-                ~ var ~ " = new typeof(" ~ var ~ ")(filename);\n"
-                ~ "set_Utlfile = " ~ var ~ ";\n"
-                ~ "save = &" ~ var ~ ".save;\n"
-                ~ "break;\n";
-    }
-    return result ~ "default:\n"
-                ~ "assert(0, q{Bad index: } ~ extension(filename));\n}";
+    assert(0);
 }
 
 abstract class UtlFile {

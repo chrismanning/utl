@@ -12,7 +12,7 @@ void main(string[] args)
                     continue Outer;
             }
         try {
-            auto f = new MediaFile(name);
+            UtlFile f = openMediaFile(name);
             writeln(f["artist"]);
             f.close();
         }
