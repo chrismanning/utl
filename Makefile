@@ -23,3 +23,6 @@ $(OBJS): $(SRCS)
 
 test: test/test.d libutl
 	$(DMD) $(FLAGS) $< -of$@1 -Llibutl.a
+
+docs: $(SRCS)
+	$(DMD) -D -Dddocs -c -o- $(SRCS)
