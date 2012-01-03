@@ -9,7 +9,7 @@ class VorbisException : Exception {
     }
 }
 
-class VorbisComment : Metadata!string {
+class VorbisComment : Metadata!(string,true) {
   private:
     MetadataBlockHeader header;
     string vendorString;
@@ -72,7 +72,7 @@ class VorbisComment : Metadata!string {
 
     string[] makeCommentList() {
         string[] tmp;
-        foreach(key,value; tags) {
+        foreach(key,value; tags.toAA()) {
             tmp ~= [key.originalKey ~ "=" ~ value.value];
         }
         return tmp;

@@ -14,6 +14,9 @@ void main(string[] args)
         try {
             UtlFile f = openMediaFile(name);
             writeln(f["artist"]);
+            writeln(f.printTags());
+            f.remove("artist");
+            writeln(f.printTags());
             f.close();
         }
         catch(Exception e) {

@@ -1,11 +1,10 @@
 module utl.util;
 
-import std.traits,std.conv,std.stdio,
-    std.outbuffer,std.algorithm,std.exception,
-    std.typecons,std.variant,std.typetuple,std.path,
-    std.string,std.container,std.range,std.utf,std.random;
-package import std.system,std.bitmanip;
-import core.bitop;
+import std.traits, std.conv, std.stdio, std.functional,
+    std.outbuffer, std.algorithm, std.exception,
+    std.typecons, std.typetuple, std.path,
+    std.string, std.container, std.range, std.utf, std.random,
+    std.system, std.bitmanip;
 import utl.all;
 
 class UtlException : Exception {
@@ -45,21 +44,23 @@ abstract class UtlFile {
         file.close();
     }
 
-    final auto opIndex(string key) {
+    final auto opIndex(S)(S key) if(isSomeString!S) {
         return metadata[key];
     }
 
-    final void opIndexAssign(string value, string key) {
+    final void opIndexAssign(S,T)(S value, T key) if(isSomeString!S && isSomeString!T) {
         metadata[key] = value;
     }
 
-    final void removeTag(string key) {
+    final void remove(string key) {
         metadata.remove(Key(key));
     }
 
     final string printTags() {
         return to!string(metadata);
     }
+
+    void save(bool stripID3 = false);
 
     auto opDispatch(string s)(string input = "") {
         auto x = toLower(s);
@@ -100,28 +101,65 @@ class Properties : Props {
     }
 }
 
-private abstract class Metadata_I {
-    string opIndex(string key);
-    void opIndexAssign(T_V, T_K)(T_V value, T_K key);
-    void opIndexOpAssign(string op)(string value, string key);
-    void assign(string key, string value);
-    void remove(Key key);
-    string toString();
+mixin template Assign(A) {
+    void assign(A value, string key) {
+        static if(is(T == A)) {
+            this[key] = value;
+        }
+        else this[key] = to!T(value);
+    }
 }
 
-abstract class Metadata(T) if(isSomeString!T || is(T == ubyte[])) : Metadata_I {
-    protected Tag!T[Key] tags;
-
-    void assign(string key, string value) {
-        this[key] = value;
+private abstract class Metadata_I {
+    string opIndex(S)(S key) if(isSomeString!S) {
+        static if(!is(S == string)) {
+            return get(to!string(key));
+        }
+        else return get(key);
     }
-
-    final string opIndex(string key) {
-        return to!string(tags.get(Key(key),Tag!T("")));
+    void opIndexAssign(T_V, T_K)(T_V value, T_K key)
+    if((isSomeString!T_V || is(T_V == Tag)) && (isSomeString!T_K || is(T_K == Key)))
+    {
+        assign(value,to!string(key));
     }
+    void opIndexOpAssign(string op)(string value, string key);
+  abstract:
+    override string toString();
+    string get(string key);
+    void assign(string value, string key);
+    void assign(wstring value, string key);
+    void assign(dstring value, string key);
+    void remove(Key key);
+}
+
+template isTagCompat(T,S) {
+    enum isTagCompat = isSomeString!T || is(T == Tag!S);
+}
+template isKeyCompat(T) {
+    enum isKeyCompat = isSomeString!T || is(T == Key);
+}
+
+abstract class Metadata(T, bool allowDuplicates = false)
+if(isSomeString!T || is(T == ubyte[])) : Metadata_I {
+    TagTable!(Tag!T,allowDuplicates) tags;
+
+    final string opIndex(S)(S key) if(isSomeString!S) {
+        return to!string(tags[Key(key)]);
+    }
+    static if(allowDuplicates) {
+        string[] getAll(S)(S key) if(isSomeString!S) {
+            return tags.get(Key(key),[Tag!T("")]);
+        }
+    }
+    final string get(string key) {
+        return this[key];
+    }
+    mixin Assign!string;
+    mixin Assign!wstring;
+    mixin Assign!dstring;
 
     final void opIndexAssign(T_V = T, T_K)(T_V value, T_K key)
-        if((isSomeString!T_V || is(T_V == Tag)) && (isSomeString!T_K || is(T_K == Key)))
+        if(isTagCompat!(T_V,T) && isKeyCompat!T_K)
     {
         static if(!is(T_V == T)) {
             static if(isSomeString!T) {
@@ -139,7 +177,122 @@ abstract class Metadata(T) if(isSomeString!T || is(T == ubyte[])) : Metadata_I {
     }
 
     string toString() {
-        return to!string(tags);
+        return tags.toString();
+    }
+}
+
+private struct TagTable(T, bool allowDuplicates) {
+    private struct Pair {
+        Key key;
+        T value;
+    }
+    private Array!Pair pairs;
+
+//     invariant() {
+//         static if(!allowDuplicates) {
+//             assert();
+//         }
+//     }
+
+    this(T[Key] tagAA) {
+        foreach(Key k, T v; tagAA) {
+            pairs.insertBack(Pair(k,v));
+        }
+    }
+
+    T opIndex(K)(K key) if(isKeyCompat!K) {
+        auto idx = contains(key);
+        if(idx == -1)
+            return T("");
+        return pairs[idx].value;
+    }
+
+    void opIndexAssign(K,V)(V value, K key) if(isKeyCompat!K && isTagCompat!(V,string)) {
+        static if(!allowDuplicates) {
+            auto idx = contains(key);
+            if(idx != -1) {
+                pairs[idx].value = T(value);
+                return;
+            }
+        }
+        pairs.insertBack(Pair(Key(key),T(value)));
+    }
+
+    size_t contains(K)(K key) if(isKeyCompat!K) {
+        return countUntil!`a.key == b`(pairs[], Key(key));
+    }
+
+    void remove(K)(K key) if(isKeyCompat!K) {
+        auto r = rFilter!`a.key != b`(pairs[],Key(key));
+        pairs = Array!Pair(array(r));
+    }
+
+    T[Key] toAA() {
+        T[Key] aa;
+        foreach(p; pairs) {
+            aa[p.key] = p.value;
+        }
+        return aa;
+    }
+
+    /*
+     * Copied from std.algorithm.filter but changed unaryfun to binaryfun
+     * and added an extra parameter
+     */
+    private auto rFilter(alias pred = "a == b", Range, K)(Range rs, K k)
+    if (isInputRange!(Unqual!Range)) {
+        struct Result
+        {
+            alias Unqual!Range R;
+            R _input;
+
+            this(R r)
+            {
+                _input = r;
+                while (!_input.empty && !binaryFun!pred(_input.front,k))
+                {
+                    _input.popFront();
+                }
+            }
+
+            auto opSlice() { return this; }
+
+            static if (isInfinite!Range)
+            {
+                enum bool empty = false;
+            }
+            else
+            {
+                @property bool empty() { return _input.empty; }
+            }
+
+            void popFront()
+            {
+                do
+                {
+                    _input.popFront();
+                } while (!_input.empty && !binaryFun!pred(_input.front,k));
+            }
+
+            @property auto ref front()
+            {
+                return _input.front;
+            }
+
+            static if(isForwardRange!R)
+            {
+                @property auto save()
+                {
+                    return Result(_input);
+                }
+            }
+        }
+
+        return Result(rs);
+    }
+
+    string toString() {
+        return to!string(toAA());
     }
 }
 
@@ -211,12 +364,20 @@ struct Tag(T) if(isSomeString!T || is(T == ubyte[])) {
         return this;
     }
 
+    const bool opEquals(ref const Tag!T b) {
+        return std.string.cmp(_value, b._value) == 0;
+    }
+
+    const int opCmp(ref const Tag!T b) {
+        return std.string.cmp(_value, b._value);
+    }
+
     @property {
-        void value(T a) {
-            _value = a;
-        }
         T value() {
             return _value;
+        }
+        void value(T a) {
+            _value = a;
         }
         ApeItemType apeItemType() {
             return _apeItemType;
@@ -257,16 +418,18 @@ struct Key {
     string _key;
 
   public:
-    this(string key, string allowedChars = allowedChars) {
-        _originalKey = validateKey(key, allowedChars);
-        _key = toLower(_originalKey);
+    this(S)(S key, string allowedChars = allowedChars) if(isKeyCompat!S) {
+        static if(isSomeString!S) {
+            _originalKey = validateKey(to!string(key), allowedChars);
+            _key = toLower(_originalKey);
+        }
+        else {
+            this = key;
+        }
     }
 
     const hash_t toHash() {
-        hash_t hash;
-        foreach(c; _key)
-            hash = (hash * 9) + c;
-        return hash;
+        return typeid(string).getHash(&_key);
     }
 
     const bool opEquals(ref const Key s) {

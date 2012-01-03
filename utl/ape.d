@@ -173,7 +173,7 @@ class APE : Metadata!string {
             int x;
             for(; x < 255 && data[p+x] != 0x00; ++x) {}
             auto key = cast(string) data[p..p+x]; p+=x+1;
-            if(Key(key) in tags) {
+            if(tags.contains(Key(key))) {
                 p += value_length;
                 continue;
             }
@@ -208,7 +208,7 @@ class APE : Metadata!string {
             //tmp.write(new APEHeader(tagSize,tags.length,
         }
 
-        foreach(key,value; tags) {
+        foreach(key,value; tags.toAA()) {
             tagSize += (9 + key.length + value.length);
             buf.write(ntl(cast(uint) value.length));
             buf.write(ntl(cast(uint) Flags(value.apeItemType)));
