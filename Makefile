@@ -22,7 +22,7 @@ $(OBJS): $(SRCS)
 	$(DMD) $(FLAGS) -c -of$@ $(patsubst %.o, %.d, $@)
 
 test: test/test.d libutl
-	$(DMD) $(FLAGS) $< -of$@1 -Llibutl.a
+	$(DMD) -Llibutl.a $(FLAGS) $< -of$@1
 
 docs: $(SRCS)
 	$(DMD) -D -Dddocs -c -o- $(SRCS)
