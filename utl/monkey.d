@@ -14,7 +14,6 @@ class MonkeyException : Exception {
 class MonkeyFile : UtlFile {
     APE apetags;
     ID3v1 id3tags;
-    private string filename;
 
     this(string filename) {
         file = File(filename,"rb");

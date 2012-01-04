@@ -25,6 +25,7 @@ class Mp3File : UtlFile {
 
     this(string filename) {
         file = File(filename);
+        this.filename = filename;
 
         try {
             id3v2tags = new ID3v2(file);

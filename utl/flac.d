@@ -459,7 +459,6 @@ class FlacFile : UtlFile {
     ID3v2 id3tags;
 
   public:
-    string filename;
     uint initialSize;
 
     this(string filename) {

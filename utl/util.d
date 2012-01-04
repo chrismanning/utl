@@ -39,6 +39,10 @@ abstract class UtlFile {
     Properties properties;
     Metadata_I metadata;
 
+    @property void filename(string f) {
+        filename_ = f;
+    }
+
   public:
     final void close() {
         file.close();
@@ -54,6 +58,10 @@ abstract class UtlFile {
 
     final void remove(string key) {
         metadata.remove(Key(key));
+    }
+
+    @property string filename() {
+        return filename;
     }
 
     final string printTags() {
@@ -72,6 +80,8 @@ abstract class UtlFile {
         }
         return this[x];
     }
+
+    private string filename_;
 }
 
 private abstract class Props {
