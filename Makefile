@@ -4,7 +4,7 @@ CC = gcc
 SRCS := $(wildcard utl/*.d)
 OBJS := $(patsubst %.d, %.o, $(SRCS))
 
-FLAGS = -gc
+FLAGS = -gc -w
 
 libutl: $(SRCS)
 	$(DMD) $(FLAGS) -lib $(SRCS) -of$@.a

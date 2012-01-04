@@ -53,7 +53,7 @@ class WavPackFile : UtlFile {
         return file.rawRead(new char[4]) == "wvpk";
     }
 
-    void save(bool stripID3 = false) {
+    override void save(bool stripID3 = false) {
         scope(exit) file.flush();
 
         if(exists(filename) && metadata !is null) {

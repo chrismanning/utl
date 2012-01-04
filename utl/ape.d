@@ -264,8 +264,6 @@ class APE : Metadata!string {
             return file.rawRead(new char[8]) == "APETAGEX";
         }
         else return true;
-
-        return false;
     }
 
     T opCast(T)() {

@@ -102,7 +102,7 @@ class Properties : Props {
 }
 
 mixin template Assign(A) {
-    void assign(A value, string key) {
+    override void assign(A value, string key) {
         static if(is(T == A)) {
             this[key] = value;
         }
@@ -151,7 +151,7 @@ if(isSomeString!T || is(T == ubyte[])) : Metadata_I {
             return tags.get(Key(key),[Tag!T("")]);
         }
     }
-    final string get(string key) {
+    final override string get(string key) {
         return this[key];
     }
     mixin Assign!string;
@@ -172,11 +172,11 @@ if(isSomeString!T || is(T == ubyte[])) : Metadata_I {
     final void opIndexOpAssign(string op)(string value, string key) {
     }
 
-    void remove(Key key) {
+    override void remove(Key key) {
         tags.remove(key);
     }
 
-    string toString() {
+    override string toString() {
         return tags.toString();
     }
 }

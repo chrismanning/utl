@@ -58,7 +58,7 @@ class Mp3File : UtlFile {
         }
     }
 
-    void save(bool stripID3 = false) {
+    override void save(bool stripID3 = false) {
     }
 }
 

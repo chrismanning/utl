@@ -501,7 +501,7 @@ class FlacFile : UtlFile {
         return 1024;
     }
 
-    void save(bool stripID3 = false) {
+    override void save(bool stripID3 = false) {
         auto buf = flac.write;
         uint newSize = flac.size();
 
@@ -582,7 +582,8 @@ class Flac {
             if(blocks[BlockType!T] !is null) {
                 if(is(T == Padding))
                     continue;
-                buf.write(cast(ubyte[])blocks[BlockType!T]);
+                else
+                    buf.write(cast(ubyte[])blocks[BlockType!T]);
             }
         }
 
