@@ -128,7 +128,7 @@ private abstract class Metadata_I {
         else return get(key);
     }
     void opIndexAssign(T_V, T_K)(T_V value, T_K key)
-    if((isSomeString!T_V || is(T_V == Tag)) && (isSomeString!T_K || is(T_K == Key)))
+    if((isSomeString!T_V || is(T_V == Tag)) && isKeyCompat!T_K)
     {
         assign(value,to!string(key));
     }
@@ -198,12 +198,6 @@ private struct TagTable(T, bool allowDuplicates) {
     }
     private Array!Pair pairs;
 
-//     invariant() {
-//         static if(!allowDuplicates) {
-//             assert();
-//         }
-//     }
-
     this(T[Key] tagAA) {
         foreach(Key k, T v; tagAA) {
             pairs.insertBack(Pair(k,v));
@@ -245,65 +239,65 @@ private struct TagTable(T, bool allowDuplicates) {
         return aa;
     }
 
-    /*
-     * Copied from std.algorithm.filter but changed unaryfun to binaryfun
-     * and added an extra parameter
-     */
-    private auto rFilter(alias pred = "a == b", Range, K)(Range rs, K k)
-    if (isInputRange!(Unqual!Range)) {
-        struct Result
-        {
-            alias Unqual!Range R;
-            R _input;
-
-            this(R r)
-            {
-                _input = r;
-                while (!_input.empty && !binaryFun!pred(_input.front,k))
-                {
-                    _input.popFront();
-                }
-            }
-
-            auto opSlice() { return this; }
-
-            static if (isInfinite!Range)
-            {
-                enum bool empty = false;
-            }
-            else
-            {
-                @property bool empty() { return _input.empty; }
-            }
-
-            void popFront()
-            {
-                do
-                {
-                    _input.popFront();
-                } while (!_input.empty && !binaryFun!pred(_input.front,k));
-            }
-
-            @property auto ref front()
-            {
-                return _input.front;
-            }
-
-            static if(isForwardRange!R)
-            {
-                @property auto save()
-                {
-                    return Result(_input);
-                }
-            }
-        }
-
-        return Result(rs);
-    }
-
     string toString() {
         return to!string(toAA());
     }
+}
+
+/*
+ * Copied from std.algorithm.filter but changed unaryfun to binaryfun
+ * and added an extra parameter
+ */
+private auto rFilter(alias pred = "a == b", Range, K)(Range rs, K k)
+if (isInputRange!(Unqual!Range)) {
+    struct Result
+    {
+        alias Unqual!Range R;
+        R _input;
+
+        this(R r)
+        {
+            _input = r;
+            while (!_input.empty && !binaryFun!pred(_input.front,k))
+            {
+                _input.popFront();
+            }
+        }
+
+        auto opSlice() { return this; }
+
+        static if (isInfinite!Range)
+        {
+            enum bool empty = false;
+        }
+        else
+        {
+            @property bool empty() { return _input.empty; }
+        }
+
+        void popFront()
+        {
+            do
+            {
+                _input.popFront();
+            } while (!_input.empty && !binaryFun!pred(_input.front,k));
+        }
+
+        @property auto ref front()
+        {
+            return _input.front;
+        }
+
+        static if(isForwardRange!R)
+        {
+            @property auto save()
+            {
+                return Result(_input);
+            }
+        }
+    }
+
+    return Result(rs);
 }
 
 struct Tag(T) if(isSomeString!T || is(T == ubyte[])) {

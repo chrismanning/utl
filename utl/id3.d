@@ -75,13 +75,15 @@ class ID3v1 : Metadata!string {
         this["artist"] = .strip(decodeLatin1(data[p..p+30])); p+=30;
         this["album"] = .strip(decodeLatin1(data[p..p+30])); p+=30;
         this["year"] = .strip(decodeLatin1(data[p..p+4])); p+=4;
-        if(data[p+28] == 0x00) {
+
+        if(data[p+28] == 0x00) { //ID3v1.1
             this["comment"] = .strip(decodeLatin1(data[p..p+28])); p+=29;
             this["tracknumber"] = to!string(data[p]); ++p;
         }
         else {
             this["comment"] = .strip(decodeLatin1(data[p..p+30])); p+=30;
         }
+
         this["genre"] = genres[data[p]];
 
         if(hasEnhancedID3v1(file)) {
