@@ -3,9 +3,9 @@ import std.stdio,std.outbuffer,std.string,std.algorithm,
     std.traits,std.conv,std.exception;
 import utl.util,utl.flac;
 
-class VorbisException : Exception {
-    this(string msg) {
-        super(msg);
+class VorbisException : UtlException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) {
+        super(msg, file, line);
     }
 }
 

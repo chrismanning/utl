@@ -5,6 +5,12 @@ import std.stdio,std.conv,std.bitmanip,
     std.string,std.outbuffer,std.traits;
 import utl.util;
 
+class APEException : Exception {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) {
+        super(msg, file, line);
+    }
+}
+
 enum HeaderSize = 32;
 enum ApeItemType : ubyte {
     text,
@@ -285,11 +291,5 @@ class APE : Metadata!string {
         void tagStart(ulong a) {
             _tagStart = a;
         }
-    }
-}
-
-class APEException : Exception {
-    this(string msg) {
-        super(msg);
     }
 }

@@ -10,9 +10,9 @@ import core.bitop;
 
 import utl.util,utl.id3,utl.vorbis;
 
-class FlacException : Exception {
-    this(string msg) {
-        super(msg);
+class FlacException : UtlException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) {
+        super(msg, file, line);
     }
 }
 

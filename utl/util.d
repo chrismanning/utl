@@ -8,8 +8,8 @@ import std.traits, std.conv, std.stdio, std.functional,
 import utl.all;
 
 class UtlException : Exception {
-    this(string msg) {
-        super(msg);
+    this(string msg, string file = __FILE__, size_t line = __LINE__) {
+        super(msg, file, line);
     }
 }
 
@@ -432,7 +432,7 @@ struct Key {
         }
     }
 
-    const hash_t toHash() {
+    hash_t toHash() const nothrow @safe {
         return typeid(string).getHash(&_key);
     }
 

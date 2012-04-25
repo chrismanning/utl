@@ -7,9 +7,9 @@ import std.stdio,std.conv,std.bitmanip,
 import core.bitop;
 import utl.util;
 
-class ID3Exception : Exception {
-    this(string msg) {
-        super(msg);
+class ID3Exception : UtlException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) {
+        super(msg, file, line);
     }
 }
 

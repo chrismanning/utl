@@ -5,9 +5,9 @@ import std.stdio,std.conv,std.bitmanip,
     std.traits,std.file;
 import utl.util,utl.ape,utl.id3;
 
-class MonkeyException : Exception {
-    this(string msg) {
-        super(msg);
+class MonkeyException : UtlException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) {
+        super(msg, file, line);
     }
 }
 

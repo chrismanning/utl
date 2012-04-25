@@ -1,5 +1,4 @@
 DMD = dmd
-CC = gcc
 
 SRCS := $(wildcard utl/*.d)
 OBJS := $(patsubst %.d, %.o, $(SRCS))
